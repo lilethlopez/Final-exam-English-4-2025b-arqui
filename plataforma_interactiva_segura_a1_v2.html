@@ -1,0 +1,894 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Plataforma Interactiva A1 - HTML5 Canvas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #e4ebf5;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #e4ebf5;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="quizCanvas"></canvas>
+
+  <script>
+    // =========================
+    // CONFIGURACIÓN GENERAL
+    // =========================
+    const TOTAL_QUESTIONS = 25;
+    const FEEDBACK_TIME = 4500; // ms (4.5 segundos aprox)
+    const BASE_FONT_SIZE = 16;  // px mínimo 15+
+    const startTime = Date.now(); // periodo de gracia al cargar
+
+    const canvas = document.getElementById("quizCanvas");
+    const ctx = canvas.getContext("2d");
+    let dpr = window.devicePixelRatio || 1;
+
+    // =========================
+    // BANCO DE PREGUNTAS (1-40)
+    // =========================
+    const questionBank = [
+      {
+        id: 1,
+        topic: "Past Perfect",
+        text: "When I arrived at the party, everyone __________ home.",
+        options: ["went", "goes", "had gone", "is going"],
+        correctIndex: 2
+      },
+      {
+        id: 2,
+        topic: "Types of Crime",
+        text: "Someone took my bag from my car. This is called:",
+        options: ["murder", "theft", "fire", "accident"],
+        correctIndex: 1
+      },
+      {
+        id: 3,
+        topic: "Linkers",
+        text: "I woke up. __________, I had breakfast. After that, I went to work.",
+        options: ["Finally", "First", "Then", "After"],
+        correctIndex: 1
+      },
+      {
+        id: 4,
+        topic: "Third Conditional",
+        text: "If I __________ harder, I would have passed the exam.",
+        options: ["study", "studied", "had studied", "have studied"],
+        correctIndex: 2
+      },
+      {
+        id: 5,
+        topic: "Should / Could / Might have",
+        text: "You __________ called me. I was worried about you!",
+        options: ["might have", "could have", "should have", "must have"],
+        correctIndex: 2
+      },
+      {
+        id: 6,
+        topic: "Life Stages",
+        text: "A person between 13 and 19 years old is a:",
+        options: ["baby", "adult", "teenager", "child"],
+        correctIndex: 2
+      },
+      {
+        id: 7,
+        topic: "Passive Voice (Present Simple)",
+        text: "English __________ in many countries.",
+        options: ["speaks", "is spoken", "spoke", "speaking"],
+        correctIndex: 1
+      },
+      {
+        id: 8,
+        topic: "Passive Voice (Past Simple)",
+        text: "This house __________ in 1990.",
+        options: ["built", "builds", "is built", "was built"],
+        correctIndex: 3
+      },
+      {
+        id: 9,
+        topic: "Relative Clauses (who)",
+        text: "The woman __________ lives next door is a teacher.",
+        options: ["which", "who", "where", "when"],
+        correctIndex: 1
+      },
+      {
+        id: 10,
+        topic: "Relative Clauses (where)",
+        text: "This is the place __________ I met my best friend.",
+        options: ["who", "when", "where", "whose"],
+        correctIndex: 2
+      },
+      {
+        id: 11,
+        topic: "Relative Clauses (whose)",
+        text: "The boy __________ father is a doctor is very smart.",
+        options: ["who", "whose", "which", "where"],
+        correctIndex: 1
+      },
+      {
+        id: 12,
+        topic: "Gerunds and Infinitives (subject)",
+        text: "__________ is good for your health.",
+        options: ["Swim", "To swim", "Swimming", "Swims"],
+        correctIndex: 2
+      },
+      {
+        id: 13,
+        topic: "Gerunds and Infinitives (after verbs)",
+        text: "I enjoy __________ music.",
+        options: ["listen", "to listen", "listened", "listening"],
+        correctIndex: 3
+      },
+      {
+        id: 14,
+        topic: "Gerunds and Infinitives (after prepositions)",
+        text: "She is good __________ playing the piano.",
+        options: ["at", "to", "for", "in"],
+        correctIndex: 0
+      },
+      {
+        id: 15,
+        topic: "Gerunds and Infinitives (after adjectives)",
+        text: "It's easy __________ English.",
+        options: ["learning", "learned", "to learn", "learn"],
+        correctIndex: 2
+      },
+      {
+        id: 16,
+        topic: "Modals of Deduction (must)",
+        text: "She always gets good grades. She __________ study a lot.",
+        options: ["might", "could", "must", "can"],
+        correctIndex: 2
+      },
+      {
+        id: 17,
+        topic: "Modals of Deduction (might/could)",
+        text: "He's not answering his phone. He __________ be sleeping.",
+        options: ["must", "should", "might", "can't"],
+        correctIndex: 2
+      },
+      {
+        id: 18,
+        topic: "Phrasal Verbs",
+        text: "Can you __________ the TV? I can't hear it.",
+        options: ["turn off", "turn down", "turn up", "turn in"],
+        correctIndex: 2
+      },
+      {
+        id: 19,
+        topic: "Past Perfect",
+        text: "She __________ dinner before her husband arrived.",
+        options: ["has cooked", "cooks", "had cooked", "is cooking"],
+        correctIndex: 2
+      },
+      {
+        id: 20,
+        topic: "Types of Crime",
+        text: "Breaking into a house to steal things is called:",
+        options: ["robbery", "burglary", "murder", "kidnapping"],
+        correctIndex: 1
+      },
+      {
+        id: 21,
+        topic: "Third Conditional",
+        text: "If they __________ the map, they wouldn't have gotten lost.",
+        options: ["had brought", "brought", "bring", "have brought"],
+        correctIndex: 0
+      },
+      {
+        id: 22,
+        topic: "Childhood Memories",
+        text: "When I was a child, I __________ play in the park every day.",
+        options: ["use to", "used to", "am used to", "using to"],
+        correctIndex: 1
+      },
+      {
+        id: 23,
+        topic: "Passive Voice (Past Simple)",
+        text: "The letter __________ yesterday.",
+        options: ["is sent", "was sent", "sent", "sends"],
+        correctIndex: 1
+      },
+      {
+        id: 24,
+        topic: "Relative Clauses (when)",
+        text: "I remember the day __________ we first met.",
+        options: ["where", "who", "when", "which"],
+        correctIndex: 2
+      },
+      {
+        id: 25,
+        topic: "Gerunds and Infinitives (after verbs)",
+        text: "He decided __________ a new car.",
+        options: ["buying", "to buy", "buy", "bought"],
+        correctIndex: 1
+      },
+      {
+        id: 26,
+        topic: "Phrasal Verbs",
+        text: "Please __________ the light when you leave the room.",
+        options: ["turn up", "turn on", "turn off", "turn down"],
+        correctIndex: 2
+      },
+      {
+        id: 27,
+        topic: "Types of Crime",
+        text: "Taking someone by force and asking for money is:",
+        options: ["theft", "robbery", "kidnapping", "burglary"],
+        correctIndex: 2
+      },
+      {
+        id: 28,
+        topic: "Past Perfect",
+        text: "They __________ the movie before, so they didn't want to watch it again.",
+        options: ["see", "had seen", "saw", "have seen"],
+        correctIndex: 1
+      },
+      {
+        id: 29,
+        topic: "Could have / Might have",
+        text: "She __________ won the race, but she fell down.",
+        options: ["should have", "must have", "could have", "can't have"],
+        correctIndex: 2
+      },
+      {
+        id: 30,
+        topic: "Linkers",
+        text: "__________, we visited the museum. After that, we had lunch.",
+        options: ["Finally", "First", "Later", "Then"],
+        correctIndex: 1
+      },
+      {
+        id: 31,
+        topic: "Modals of Deduction (can't)",
+        text: "The lights are off. They __________ be at home.",
+        options: ["must", "might", "could", "can't"],
+        correctIndex: 3
+      },
+      {
+        id: 32,
+        topic: "Life Stages",
+        text: "A person who is 70 years old is:",
+        options: ["a teenager", "middle-aged", "elderly", "a child"],
+        correctIndex: 2
+      },
+      {
+        id: 33,
+        topic: "Passive Voice (Present Simple)",
+        text: "These phones __________ in China.",
+        options: ["are made", "make", "is made", "made"],
+        correctIndex: 0
+      },
+      {
+        id: 34,
+        topic: "Gerunds and Infinitives (after prepositions)",
+        text: "I'm interested __________ learning French.",
+        options: ["to", "in", "at", "for"],
+        correctIndex: 1
+      },
+      {
+        id: 35,
+        topic: "Phrasal Verbs",
+        text: "I need to __________ this form and send it.",
+        options: ["fill in", "fill up", "fill on", "fill out"],
+        correctIndex: 0
+      },
+      {
+        id: 36,
+        topic: "Should have",
+        text: "They __________ more water on the trip. Now they're thirsty.",
+        options: ["might have brought", "could have brought", "should have brought", "must have brought"],
+        correctIndex: 2
+      },
+      {
+        id: 37,
+        topic: "Types of Crime",
+        text: "Destroying public property is called:",
+        options: ["theft", "vandalism", "robbery", "fraud"],
+        correctIndex: 1
+      },
+      {
+        id: 38,
+        topic: "Relative Clauses (who)",
+        text: "That's the doctor __________ helped my mother.",
+        options: ["which", "where", "who", "whose"],
+        correctIndex: 2
+      },
+      {
+        id: 39,
+        topic: "Past Perfect",
+        text: "By the time we got to the cinema, the film __________.",
+        options: ["started", "has started", "had started", "starts"],
+        correctIndex: 2
+      },
+      {
+        id: 40,
+        topic: "Gerunds and Infinitives (purpose)",
+        text: "I went to the store __________ some milk.",
+        options: ["buying", "for buy", "to buy", "buy"],
+        correctIndex: 2
+      }
+    ];
+
+    // =========================
+    // ESTADO DEL JUEGO
+    // =========================
+    let gameState = "start"; // start | question | feedback | result | security
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let selectedOptionIndex = null;
+    let feedbackCorrect = false;
+    let feedbackMessage = "";
+    let feedbackTimeoutId = null;
+    let securityMessage = "";
+    let clickableRegions = [];
+
+    // =========================
+    // UTILIDADES
+    // =========================
+    function fisherYatesShuffle(array) {
+      const arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function pickRandomQuestions() {
+      const shuffled = fisherYatesShuffle(questionBank);
+      const selected = shuffled.slice(0, TOTAL_QUESTIONS).map(q => {
+        const optionsShuffled = fisherYatesShuffle(q.options);
+        const correctText = q.options[q.correctIndex];
+        const newCorrectIndex = optionsShuffled.indexOf(correctText);
+        return {
+          id: q.id,
+          topic: q.topic,
+          text: q.text,
+          options: optionsShuffled,
+          correctIndex: newCorrectIndex
+        };
+      });
+      return selected;
+    }
+
+    function triggerSecurityReset(message) {
+      securityMessage = message || "Reinicio por motivos de seguridad.";
+      resetQuiz(true);
+    }
+
+    function resetQuiz(isSecurity = false) {
+      if (feedbackTimeoutId) {
+        clearTimeout(feedbackTimeoutId);
+        feedbackTimeoutId = null;
+      }
+      currentQuestions = pickRandomQuestions();
+      currentIndex = 0;
+      score = 0;
+      selectedOptionIndex = null;
+      feedbackCorrect = false;
+      feedbackMessage = "";
+      clickableRegions = [];
+      gameState = isSecurity ? "security" : "start";
+      draw();
+    }
+
+    // =========================
+    // FUNCIONES DE DIBUJO
+    // =========================
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawRoundedRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function wrapText(text, x, y, maxWidth, lineHeight) {
+      const words = text.split(" ");
+      let line = "";
+      let yy = y;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + " ";
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+          ctx.fillText(line, x, yy);
+          line = words[n] + " ";
+          yy += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) ctx.fillText(line, x, yy);
+      return yy;
+    }
+
+    function drawButton(text, x, y, w, h, primary = true) {
+      ctx.save();
+      const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+      if (primary) {
+        gradient.addColorStop(0, "#4e8cff");
+        gradient.addColorStop(1, "#6ad0ff");
+      } else {
+        gradient.addColorStop(0, "#ffffff");
+        gradient.addColorStop(1, "#f5f7fb");
+      }
+      drawRoundedRect(x, y, w, h, 14);
+      ctx.fillStyle = primary ? gradient : "#ffffff";
+      ctx.fill();
+      ctx.lineWidth = primary ? 0 : 1;
+      ctx.strokeStyle = primary ? "rgba(0,0,0,0.12)" : "rgba(0,0,0,0.08)";
+      ctx.stroke();
+
+      ctx.fillStyle = primary ? "#ffffff" : "#1c2533";
+      ctx.font = "600 " + BASE_FONT_SIZE + "px system-ui";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x + w / 2, y + h / 2);
+      ctx.restore();
+    }
+
+    function draw() {
+      clearCanvas();
+      const width = canvas.width / dpr;
+      const height = canvas.height / dpr;
+      clickableRegions = [];
+
+      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+      bgGrad.addColorStop(0, "#e4ebf5");
+      bgGrad.addColorStop(1, "#ffffff");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      const cardWidth = Math.min(width * 0.9, 700);
+      const cardX = (width - cardWidth) / 2;
+      const cardY = height * 0.08;
+      const cardHeight = height * 0.84;
+
+      ctx.save();
+      drawRoundedRect(cardX, cardY, cardWidth, cardHeight, 24);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.shadowColor = "rgba(15, 23, 42, 0.15)";
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 18;
+      ctx.strokeStyle = "rgba(148,163,184,0.35)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      const padding = 24;
+      const innerX = cardX + padding;
+      let innerY = cardY + padding + 10;
+      const innerWidth = cardWidth - padding * 2;
+
+      ctx.fillStyle = "#0f172a";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+
+      if (gameState === "start" || gameState === "security") {
+        ctx.font = "700 " + (BASE_FONT_SIZE + 6) + "px system-ui";
+        const title = "PRUEBA INTERACTIVA A1 - SABER PRO STYLE";
+        wrapText(title, innerX, innerY, innerWidth, BASE_FONT_SIZE + 10);
+        innerY += 46;
+
+        ctx.font = "500 " + BASE_FONT_SIZE + "px system-ui";
+        const introLines = [
+          "Este taller selecciona 25 preguntas aleatorias de un banco seguro,",
+          "mezcla el orden de las opciones y reinicia automáticamente si detecta",
+          "cambios de pestaña, pérdida de foco o acciones sospechosas."
+        ];
+        introLines.forEach(line => {
+          wrapText(line, innerX, innerY, innerWidth, BASE_FONT_SIZE + 6);
+          innerY += BASE_FONT_SIZE + 6;
+        });
+
+        innerY += 16;
+
+        if (gameState === "security" && securityMessage) {
+          ctx.fillStyle = "#b91c1c";
+          ctx.font = "600 " + BASE_FONT_SIZE + "px system-ui";
+          wrapText(securityMessage, innerX, innerY, innerWidth, BASE_FONT_SIZE + 6);
+          innerY += BASE_FONT_SIZE * 2;
+          ctx.fillStyle = "#0f172a";
+        }
+
+        innerY += 12;
+        ctx.font = "500 " + BASE_FONT_SIZE + "px system-ui";
+        wrapText("Cuando estés listo/a, pulsa el botón para comenzar. No cambies de pestaña ni minimices la ventana.", innerX, innerY, innerWidth, BASE_FONT_SIZE + 6);
+
+        const btnWidth = Math.min(260, innerWidth);
+        const btnHeight = 56;
+        const btnX = innerX + (innerWidth - btnWidth) / 2;
+        const btnY = cardY + cardHeight - padding - btnHeight - 10;
+
+        drawButton("Start", btnX, btnY, btnWidth, btnHeight, true);
+        clickableRegions.push({
+          type: "start",
+          x: btnX,
+          y: btnY,
+          w: btnWidth,
+          h: btnHeight
+        });
+
+        ctx.font = "400 " + (BASE_FONT_SIZE - 2) + "px system-ui";
+        ctx.fillStyle = "#64748b";
+        const note = "⚠️ Si cambias de aplicación, pestaña o intentas inspeccionar el contenido, el taller se reiniciará con nuevas preguntas.";
+        wrapText(note, innerX, cardY + cardHeight - padding - btnHeight - 60, innerWidth, BASE_FONT_SIZE + 4);
+
+      } else if (gameState === "question" || gameState === "feedback") {
+        const question = currentQuestions[currentIndex];
+
+        ctx.font = "600 " + (BASE_FONT_SIZE + 2) + "px system-ui";
+        ctx.fillStyle = "#0f172a";
+        wrapText("PRUEBA A1 - Plataforma Segura", innerX, innerY, innerWidth, BASE_FONT_SIZE + 8);
+        innerY += 34;
+
+        ctx.font = "500 " + BASE_FONT_SIZE + "px system-ui";
+        ctx.fillStyle = "#1e293b";
+        const progressText = "Pregunta " + (currentIndex + 1) + " de " + TOTAL_QUESTIONS;
+        ctx.fillText(progressText, innerX, innerY);
+        innerY += BASE_FONT_SIZE + 10;
+
+        const barWidth = innerWidth;
+        const barHeight = 10;
+        const barX = innerX;
+        const barY = innerY;
+        const progressRatio = (currentIndex) / TOTAL_QUESTIONS;
+        ctx.fillStyle = "#e2e8f0";
+        drawRoundedRect(barX, barY, barWidth, barHeight, 5);
+        ctx.fill();
+        ctx.fillStyle = "#4f46e5";
+        drawRoundedRect(barX, barY, barWidth * progressRatio, barHeight, 5);
+        ctx.fill();
+        innerY += barHeight + 20;
+
+        ctx.font = "500 " + (BASE_FONT_SIZE - 1) + "px system-ui";
+        ctx.fillStyle = "#6366f1";
+        wrapText("Tema: " + question.topic, innerX, innerY, innerWidth, BASE_FONT_SIZE + 6);
+        innerY += BASE_FONT_SIZE + 10;
+
+        ctx.font = "600 " + (BASE_FONT_SIZE + 1) + "px system-ui";
+        ctx.fillStyle = "#0f172a";
+        innerY = wrapText(question.text, innerX, innerY, innerWidth, BASE_FONT_SIZE + 8) + 20;
+
+        const optionHeight = 50;
+        const optionGap = 12;
+        const optionLetters = ["A", "B", "C", "D"];
+        ctx.font = "500 " + BASE_FONT_SIZE + "px system-ui";
+
+        question.options.forEach((opt, idx) => {
+          const ox = innerX;
+          const oy = innerY + idx * (optionHeight + optionGap);
+          const ow = innerWidth;
+          const oh = optionHeight;
+
+          let isSelected = (selectedOptionIndex === idx);
+          let background = "#f8fafc";
+          let borderColor = "rgba(148,163,184,0.8)";
+          let textColor = "#0f172a";
+
+          if (gameState === "question") {
+            background = "#f8fafc";
+          } else if (gameState === "feedback") {
+            if (idx === question.correctIndex) {
+              background = "#dcfce7";
+              borderColor = "#16a34a";
+              textColor = "#14532d";
+            } else if (idx === selectedOptionIndex && selectedOptionIndex !== question.correctIndex) {
+              background = "#fee2e2";
+              borderColor = "#b91c1c";
+              textColor = "#7f1d1d";
+            } else {
+              background = "#f8fafc";
+            }
+          }
+
+          if (isSelected && gameState === "question") {
+            background = "#e0ecff";
+            borderColor = "#2563eb";
+          }
+
+          ctx.save();
+          drawRoundedRect(ox, oy, ow, oh, 14);
+          ctx.fillStyle = background;
+          ctx.fill();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = borderColor;
+          ctx.stroke();
+
+          const circleR = 16;
+          const cx = ox + 18 + circleR / 2;
+          const cy = oy + oh / 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, circleR, 0, Math.PI * 2);
+          ctx.fillStyle = "#e0e7ff";
+          ctx.fill();
+          ctx.fillStyle = "#3730a3";
+          ctx.font = "600 " + (BASE_FONT_SIZE - 1) + "px system-ui";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(optionLetters[idx], cx, cy);
+
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.font = "500 " + BASE_FONT_SIZE + "px system-ui";
+          ctx.fillStyle = textColor;
+          const textX = cx + circleR + 12;
+          const textY = cy;
+          const maxOptWidth = ow - (textX - ox) - 10;
+          const words = opt.split(" ");
+          let line = "";
+          let yy = textY - 8;
+          words.forEach((word, i) => {
+            const testLine = line + word + " ";
+            const testWidth = ctx.measureText(testLine).width;
+            if (testWidth > maxOptWidth && i > 0) {
+              ctx.fillText(line, textX, yy);
+              line = word + " ";
+              yy += BASE_FONT_SIZE + 2;
+            } else {
+              line = testLine;
+            }
+          });
+          if (line) {
+            ctx.fillText(line, textX, yy);
+          }
+          ctx.restore();
+
+          if (gameState === "question") {
+            clickableRegions.push({
+              type: "option",
+              index: idx,
+              x: ox,
+              y: oy,
+              w: ow,
+              h: oh
+            });
+          }
+        });
+
+        innerY += question.options.length * (optionHeight + optionGap) + 10;
+
+        if (gameState === "feedback") {
+          ctx.font = "600 " + BASE_FONT_SIZE + "px system-ui";
+          ctx.textAlign = "center";
+          const feedbackY = cardY + cardHeight - padding - 70;
+          if (feedbackCorrect) {
+            ctx.fillStyle = "#16a34a";
+          } else {
+            ctx.fillStyle = "#b91c1c";
+          }
+          wrapText(feedbackMessage, innerX, feedbackY, innerWidth, BASE_FONT_SIZE + 4);
+        }
+
+      } else if (gameState === "result") {
+        const grade = (score / TOTAL_QUESTIONS) * 5;
+        const gradeRounded = Math.round(grade * 10) / 10;
+
+        ctx.font = "700 " + (BASE_FONT_SIZE + 6) + "px system-ui";
+        ctx.fillStyle = "#0f172a";
+        wrapText("RESULTADOS FINALES", innerX, innerY, innerWidth, BASE_FONT_SIZE + 8);
+        innerY += 40;
+
+        ctx.font = "600 " + (BASE_FONT_SIZE + 10) + "px system-ui";
+        ctx.fillStyle = "#1d4ed8";
+        ctx.textAlign = "center";
+        ctx.fillText("Nota: " + gradeRounded.toFixed(1) + " / 5.0", innerX + innerWidth / 2, innerY);
+        innerY += 40;
+
+        ctx.font = "500 " + BASE_FONT_SIZE + "px system-ui";
+        ctx.fillStyle = "#0f172a";
+        ctx.textAlign = "left";
+        wrapText("Respuestas correctas: " + score + " de " + TOTAL_QUESTIONS, innerX, innerY, innerWidth, BASE_FONT_SIZE + 6);
+        innerY += BASE_FONT_SIZE + 10;
+        wrapText("Respuestas incorrectas: " + (TOTAL_QUESTIONS - score), innerX, innerY, innerWidth, BASE_FONT_SIZE + 6);
+        innerY += BASE_FONT_SIZE + 20;
+
+        ctx.fillStyle = "#64748b";
+        wrapText("Puedes volver a iniciar el taller para obtener un nuevo conjunto aleatorio de preguntas.", innerX, innerY, innerWidth, BASE_FONT_SIZE + 6);
+
+        const btnWidth = Math.min(260, innerWidth);
+        const btnHeight = 56;
+        const btnX = innerX + (innerWidth - btnWidth) / 2;
+        const btnY = cardY + cardHeight - padding - btnHeight - 10;
+
+        drawButton("Reiniciar taller", btnX, btnY, btnWidth, btnHeight, true);
+        clickableRegions.push({
+          type: "restart",
+          x: btnX,
+          y: btnY,
+          w: btnWidth,
+          h: btnHeight
+        });
+      }
+    }
+
+    // =========================
+    // INTERACCIÓN
+    // =========================
+    function handleOptionClick(index) {
+      if (gameState !== "question") return;
+      selectedOptionIndex = index;
+      const question = currentQuestions[currentIndex];
+      const isCorrect = (index === question.correctIndex);
+      if (isCorrect) score++;
+      feedbackCorrect = isCorrect;
+
+      const correctLetter = ["A", "B", "C", "D"][question.correctIndex];
+      const correctText = question.options[question.correctIndex];
+
+      if (isCorrect) {
+        feedbackMessage = "✅ Respuesta CORRECTA. Opción " + correctLetter + ") " + correctText;
+      } else {
+        feedbackMessage = "❌ Respuesta INCORRECTA. La respuesta correcta es " + correctLetter + ") " + correctText;
+      }
+
+      gameState = "feedback";
+      draw();
+
+      if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
+      feedbackTimeoutId = setTimeout(() => {
+        selectedOptionIndex = null;
+        feedbackTimeoutId = null;
+        currentIndex++;
+        if (currentIndex >= TOTAL_QUESTIONS) {
+          gameState = "result";
+        } else {
+          gameState = "question";
+        }
+        draw();
+      }, FEEDBACK_TIME);
+    }
+
+    canvas.addEventListener("click", function (e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left);
+      const y = (e.clientY - rect.top);
+
+      for (const region of clickableRegions) {
+        if (
+          x >= region.x &&
+          x <= region.x + region.w &&
+          y >= region.y &&
+          y <= region.y + region.h
+        ) {
+          if (region.type === "start") {
+            score = 0;
+            currentIndex = 0;
+            selectedOptionIndex = null;
+            feedbackCorrect = false;
+            feedbackMessage = "";
+            securityMessage = "";
+            gameState = "question";
+            draw();
+          } else if (region.type === "option") {
+            handleOptionClick(region.index);
+          } else if (region.type === "restart") {
+            resetQuiz(false);
+          }
+          break;
+        }
+      }
+    });
+
+    // =========================
+    // SEGURIDAD / ANTITRAMPAS
+    // =========================
+
+    document.addEventListener("contextmenu", function (e) {
+      e.preventDefault();
+    });
+
+    document.addEventListener("selectstart", function (e) {
+      e.preventDefault();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      const key = e.key.toLowerCase();
+      if (
+        key === "f12" ||
+        (e.ctrlKey && e.shiftKey && (key === "i" || key === "j" || key === "c")) ||
+        (e.ctrlKey && (key === "u" || key === "s" || key === "c" || key === "x" || key === "v"))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (Date.now() - startTime > 1500) {
+          triggerSecurityReset("Reinicio por motivos de seguridad (atajo de teclado bloqueado).");
+        }
+      }
+    }, true);
+
+    window.addEventListener("blur", function () {
+      if (Date.now() - startTime > 1500) {
+        triggerSecurityReset("Reinicio por motivos de seguridad (pérdida de foco / cambio de pestaña).");
+      }
+    });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden && Date.now() - startTime > 1500) {
+        triggerSecurityReset("Reinicio por motivos de seguridad (cambio de visibilidad / app en segundo plano).");
+      }
+    });
+
+    document.addEventListener("touchstart", function (e) {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener("gesturestart", function (e) {
+      e.preventDefault();
+    });
+
+    let lastTouchEnd = 0;
+    document.addEventListener("touchend", function (e) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
+
+    // =========================
+    // REDIMENSIÓN / INICIO
+    // =========================
+    function resizeCanvas() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function onResizeSecure() {
+      if (Date.now() - startTime > 1500) {
+        triggerSecurityReset("Reinicio por motivos de seguridad (cambio de tamaño de ventana / orientación).");
+      }
+      resizeCanvas();
+    }
+
+    window.addEventListener("resize", onResizeSecure);
+
+    // Inicializar
+    resetQuiz(false);
+    resizeCanvas();
+  </script>
+</body>
+</html>
